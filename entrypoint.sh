@@ -5,12 +5,21 @@
 : "${SLEEP_TIME:=43200}"
 : "${DESEC_CREDENTIALS:=/app/desec.ini}"
 
+STATUS_FILE="/app/status"
+echo "unknown" > /app/status 
+set_status() {
+  echo "$1" > "$STATUS_FILE"
+  echo "[STATUS] $1"
+}
+
 # Graceful shutdown
 cleanup() {
   echo "[INFO] Caught signal. Exiting gracefully..."
   exit 0
 }
 trap cleanup INT TERM
+
+set_status "starting"
 
 # Create credentials file if needed
 if [ ! -f "$DESEC_CREDENTIALS" ]; then
@@ -72,10 +81,12 @@ done
 # Renewal loop
 while true; do
   echo "[INFO] Running certbot renew..."
+  set_status "renewing"
   certbot renew \
     --authenticator dns-desec \
     --dns-desec-credentials "$DESEC_CREDENTIALS" \
     --dns-desec-propagation-seconds "$DESEC_PROPAGATION_SECONDS"
+  set_status "healthy"
   echo "[INFO] Sleeping for ${SLEEP_TIME} seconds..."
   sleep "$SLEEP_TIME" &
   wait $!
