@@ -1,10 +1,10 @@
-##Environment 
+##Environment
 Settings can be changed in .env file
 
 ##Run
 
 ```
-docker build -t certbot/certbot-dns-desec:latest .
+docker build -t XXXX/certbot-dns-desec:latest .
 
 ```
 
