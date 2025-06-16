@@ -5,32 +5,57 @@
 : "${SLEEP_TIME:=43200}"
 : "${DESEC_CREDENTIALS:=/app/desec.ini}"
 
-# Graceful shutdown handler
+# Graceful shutdown
 cleanup() {
   echo "[INFO] Caught signal. Exiting gracefully..."
   exit 0
 }
-
-# Trap common termination signals
 trap cleanup INT TERM
 
-# Create credentials file if not mounted and file doesn't exist
+# Create credentials file if needed
 if [ ! -f "$DESEC_CREDENTIALS" ]; then
   if touch "$DESEC_CREDENTIALS" 2>/dev/null; then
     echo "dns_desec_token = $DESEC_API_KEY" > "$DESEC_CREDENTIALS"
     chmod 600 "$DESEC_CREDENTIALS"
     echo "[INFO] Created credentials file at $DESEC_CREDENTIALS"
   else
-    echo "[WARN] Cannot write to $DESEC_CREDENTIALS; assuming it's mounted or provided"
+    echo "[WARN] Cannot write to $DESEC_CREDENTIALS; assuming it's mounted"
   fi
 else
   echo "[INFO] Using existing credentials file at $DESEC_CREDENTIALS"
 fi
 
-echo "[INFO] Extracting domains from HAProxy config..."
-DOMAINS=$(sh /app/extract_domains.sh)
+# Gather domains
+ALL_DOMAINS=""
 
-for DOMAIN in $DOMAINS; do
+# From DOMAINS env
+if [ -n "$DOMAINS" ]; then
+  echo "[INFO] Adding domains from DOMAINS env"
+  ALL_DOMAINS="$ALL_DOMAINS $DOMAINS"
+fi
+
+# From HAProxy config
+if [ "$READ_HAPROXY" = "true" ]; then
+  if [ -f /etc/haproxy/haproxy.cfg ]; then
+    echo "[INFO] Extracting domains from HAProxy config..."
+    HAPROXY_DOMAINS=$(sh /app/extract_domains.sh)
+    ALL_DOMAINS="$ALL_DOMAINS $HAPROXY_DOMAINS"
+  else
+    echo "[WARN] READ_HAPROXY is true but /etc/haproxy/haproxy.cfg not found."
+  fi
+fi
+
+# Deduplicate and trim
+UNIQ_DOMAINS=$(echo "$ALL_DOMAINS" | tr ' ' '\n' | awk NF | sort -u)
+
+# Ensure at least one source
+if [ -z "$UNIQ_DOMAINS" ]; then
+  echo "[ERROR] No domains found. You must set DOMAINS or READ_HAPROXY=true."
+  exit 1
+fi
+
+# Issue certificates for new domains
+for DOMAIN in $UNIQ_DOMAINS; do
   if ! certbot certificates | grep -q "Domains:.*\b$DOMAIN\b"; then
     echo "[INFO] Issuing cert for new domain: $DOMAIN"
     certbot certonly \
@@ -44,15 +69,14 @@ for DOMAIN in $DOMAINS; do
   fi
 done
 
-# Auto-renew loop with graceful termination
+# Renewal loop
 while true; do
   echo "[INFO] Running certbot renew..."
   certbot renew \
     --authenticator dns-desec \
     --dns-desec-credentials "$DESEC_CREDENTIALS" \
     --dns-desec-propagation-seconds "$DESEC_PROPAGATION_SECONDS"
-
   echo "[INFO] Sleeping for ${SLEEP_TIME} seconds..."
   sleep "$SLEEP_TIME" &
-  wait $!  # Wait on sleep so signal traps are respected
+  wait $!
 done
