@@ -2,7 +2,8 @@
 
 CERT_DIR="/etc/letsencrypt/live"
 CERT_DEST="/etc/haproxy/certs"
-CRT_LIST_PATH="/etc/haproxy/crt-list.txt"
+: "${DESEC_CREDENTIALS:=/usr/local/etc/haproxy}"
+CRT_LIST_PATH="${HAPROXY_CFG_DIR}/crt-list.txt"
 
 echo "[INFO] Generating HAProxy crt-list from: $CERT_DIR"
 mkdir -p "$(dirname "$CRT_LIST_PATH")"
@@ -23,7 +24,7 @@ for domain in "$CERT_DIR"/*; do
         cat "$fullchain" "$privkey" > "$pem_combined"
 
         # Add to crt-list
-        echo "$domain_name $pem_combined" >> "$CRT_LIST_PATH"
+        echo "$pem_combined $domain_name " >> "$CRT_LIST_PATH"
     fi
 done
 
