@@ -44,13 +44,13 @@ if [ -n "$DOMAINS" ]; then
 fi
 
 # From HAProxy config
-if [ "$READ_HAPROXY" = "true" ]; then
+if [ "$USE_HAPROXY" = "true" ]; then
   if [ -f /etc/haproxy/haproxy.cfg ]; then
     echo "[INFO] Extracting domains from HAProxy config..."
     HAPROXY_DOMAINS=$(sh /app/extract_domains.sh)
     ALL_DOMAINS="$ALL_DOMAINS $HAPROXY_DOMAINS"
   else
-    echo "[WARN] READ_HAPROXY is true but /etc/haproxy/haproxy.cfg not found."
+    echo "[WARN] USE_HAPROXY is true but /etc/haproxy/haproxy.cfg not found."
   fi
 fi
 
@@ -59,7 +59,7 @@ UNIQ_DOMAINS=$(echo "$ALL_DOMAINS" | tr ' ' '\n' | awk NF | sort -u)
 
 # Ensure at least one source
 if [ -z "$UNIQ_DOMAINS" ]; then
-  echo "[ERROR] No domains found. You must set DOMAINS or READ_HAPROXY=true."
+  echo "[ERROR] No domains found. You must set DOMAINS or USE_HAPROXY=true."
   exit 1
 fi
 
@@ -73,6 +73,9 @@ for DOMAIN in $UNIQ_DOMAINS; do
       --dns-desec-propagation-seconds "$DESEC_PROPAGATION_SECONDS" \
       --non-interactive --agree-tos \
       -d "$DOMAIN"
+    if [ "$USE_HAPROXY" = "true" ]; then
+      /app/generate_crt_list.sh
+    fi
   else
     echo "[INFO] Cert for $DOMAIN already exists. Skipping."
   fi
@@ -87,6 +90,9 @@ while true; do
     --dns-desec-credentials "$DESEC_CREDENTIALS" \
     --dns-desec-propagation-seconds "$DESEC_PROPAGATION_SECONDS"
   set_status "healthy"
+  if [ "$USE_HAPROXY" = "true" ]; then
+    /app/generate_crt_list.sh
+  fi
   echo "[INFO] Sleeping for ${SLEEP_TIME} seconds..."
   sleep "$SLEEP_TIME" &
   wait $!
