@@ -1,11 +1,13 @@
 #!/bin/sh
 
 CERT_DIR="/etc/letsencrypt/live"
+CERT_DEST="/etc/haproxy/certs"
 CRT_LIST_PATH="/etc/haproxy/crt-list.txt"
 
 echo "[INFO] Generating HAProxy crt-list from: $CERT_DIR"
 mkdir -p "$(dirname "$CRT_LIST_PATH")"
-> "$CRT_LIST_PATH"
+mkdir -p "$CERT_DEST"
+> "$CRT_LIST_PATH"  # Clear existing list
 
 for domain in "$CERT_DIR"/*; do
     [ -d "$domain" ] || continue
@@ -13,7 +15,7 @@ for domain in "$CERT_DIR"/*; do
 
     fullchain="$domain/fullchain.pem"
     privkey="$domain/privkey.pem"
-    pem_combined="/etc/haproxy/certs/${domain_name}.pem"
+    pem_combined="$CERT_DEST/${domain_name}.pem"
 
     if [ -f "$fullchain" ] && [ -f "$privkey" ]; then
         echo "[INFO] Creating combined PEM: $pem_combined"
