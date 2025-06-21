@@ -1,5 +1,5 @@
 #!/bin/sh
-HAPROXY_CFG_LOCAL_PATH
+
 CERT_DIR="/etc/letsencrypt/live"
 CERT_DEST="${HAPROXY_CFG_LOCAL}/certs"
 CERT_REMOTE_DEST="${HAPROXY_CFG_REMOTE}/certs"
@@ -22,11 +22,10 @@ for domain in "$CERT_DIR"/*; do
 
     if [ -f "$fullchain" ] && [ -f "$privkey" ]; then
         echo "[INFO] Creating combined PEM: $pem_combined"
-        mkdir -p /etc/haproxy/certs
         cat "$fullchain" "$privkey" > "$pem_combined"
 
         # Add to crt-list
-        echo "$pem_combined $domain_name " >> "$CRT_LIST_PATH"
+        echo "$pem_combined_crt_list $domain_name " >> "$CRT_LIST_PATH"
     fi
 done
 
