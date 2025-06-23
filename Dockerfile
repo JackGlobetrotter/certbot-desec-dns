@@ -13,11 +13,13 @@ COPY generate_crt_list.sh /app/generate_crt_list.sh
 RUN chmod +x /app/*.sh
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD STATUS=$(cat /app/status 2>/dev/null || echo "unknown") && \
-      case "$STATUS" in \
-        healthy|starting|renewing) exit 0 ;; \
-        *) echo "Unhealthy: status=$STATUS" >&2; exit 1 ;; \
-      esac
+  CMD if [ "$(tr -d "\n\r" < /app/status 2>/dev/null || echo missing)" = "healthy" ] || \
+        [ "$(tr -d "\n\r" < /app/status 2>/dev/null || echo missing)" = "renewing" ]; then \
+        exit 0; \
+      else \
+        echo "[healthcheck] Unhealthy" >&2; \
+        exit 1; \
+      fi
 
 # Entrypoint: checks & daemonizes
 ENTRYPOINT ["/app/entrypoint.sh"]
