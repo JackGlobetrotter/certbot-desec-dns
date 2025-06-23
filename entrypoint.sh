@@ -8,7 +8,7 @@
 STATUS_FILE="/app/status"
 echo "unknown" > /app/status 
 set_status() {
-  echo -n "$1" > "$STATUS_FILE"
+  printf "%s" "$1" > "$STATUS_FILE"
   echo "[STATUS] $1"
 }
 
