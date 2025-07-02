@@ -10,15 +10,12 @@ RUN pip install --no-cache-dir certbot-dns-desec
 COPY extract_domains.sh /app/extract_domains.sh
 COPY entrypoint.sh /app/entrypoint.sh
 COPY generate_crt_list.sh /app/generate_crt_list.sh
+COPY healthcheck.sh /app/healthcheck.sh
+
 RUN chmod +x /app/*.sh
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD if [ "$(tr -d "\n\r" < /app/status 2>/dev/null || echo missing)" = "healthy" ]; then \
-        exit 0; \
-      else \
-        echo "[healthcheck] Unhealthy" >&2; \
-        exit 1; \
-      fi
-
+  CMD /usr/local/bin/healthcheck.sh
+  
 # Entrypoint: checks & daemonizes
 ENTRYPOINT ["/app/entrypoint.sh"]
