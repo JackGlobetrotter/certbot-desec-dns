@@ -2,8 +2,6 @@
 
 HAPROXY_CFG="/etc/haproxy/haproxy.cfg"
 
-echo "[INFO] Extracting domains from TLS-enabled frontends in: $HAPROXY_CFG"
-
 awk '
   BEGIN {
     in_frontend = 0
