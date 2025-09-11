@@ -35,9 +35,12 @@ MAP_FILES=$(grep -oE 'map\([^)]*\)' "$HAPROXY_CFG" | sed -E 's/map\(([^)]*)\)/\1
 
 : > /tmp/domains_map.txt
 for f in $MAP_FILES; do
-    # Remove HAProxy container prefix and add certbot container prefix
-    f="${f#$HAPROXY_CFG_REMOTE}"     # remove HAPROXY_CFG_REMOTE
-    f="$HAPROXY_CFG_LOCAL$f"        # prepend HAPROXY_CFG_LOCAL
+    # Remove HAProxy container prefix
+    f="${f#$HAPROXY_CFG_REMOTE}"
+    # Strip everything after the first comma (default backend)
+    f="${f%%,*}"
+    # Prepend certbot container prefix
+    f="$HAPROXY_CFG_LOCAL$f"
 
     # Only process if file exists
     [ -f "$f" ] && awk '{sub(/#.*/,"")} NF {print $1}' "$f" >> /tmp/domains_map.txt
