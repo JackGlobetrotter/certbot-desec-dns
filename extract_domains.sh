@@ -30,12 +30,17 @@ sed -nE 's|.*-i (.*)|\1|p' | \
 tr ' ' '\n' > /tmp/domains_frontend.txt
 
 # --- 2. Extract domains from map files referenced in haproxy.cfg ---
-MAP_FILES=$(grep -oE 'map\([^)]*\)' "$HAPROXY_CFG" | sed -E "s|map\(([^)]*)\)|$HAPROXY_CFG_REMOTE/\1|")
-
+# Extract map files
+MAP_FILES=$(grep -oE 'map\([^)]*\)' "$HAPROXY_CFG" | sed -E 's/map\(([^)]*)\)/\1/')
 
 : > /tmp/domains_map.txt
 for f in $MAP_FILES; do
-  [ -f "$f" ] && awk '{sub(/#.*/,"")} NF {print $1}' "$f" >> /tmp/domains_map.txt
+    # Remove HAProxy container prefix and add certbot container prefix
+    f="${f#$HAPROXY_CFG_REMOTE}"     # remove HAPROXY_CFG_REMOTE
+    f="$HAPROXY_CFG_LOCAL$f"        # prepend HAPROXY_CFG_LOCAL
+
+    # Only process if file exists
+    [ -f "$f" ] && awk '{sub(/#.*/,"")} NF {print $1}' "$f" >> /tmp/domains_map.txt
 done
 
 # --- 3. Combine, deduplicate, sort ---
