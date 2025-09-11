@@ -1,6 +1,6 @@
 #!/bin/sh
 
-HAPROXY_CFG="/etc/haproxy/haproxy.cfg"
+HAPROXY_CFG="$HAPROXY_CFG_LOCAL/haproxy.cfg"
 
 # --- 1. Extract domains from frontends with SSL ---
 awk '
@@ -30,7 +30,8 @@ sed -nE 's|.*-i (.*)|\1|p' | \
 tr ' ' '\n' > /tmp/domains_frontend.txt
 
 # --- 2. Extract domains from map files referenced in haproxy.cfg ---
-MAP_FILES=$(grep -oE 'map\([^)]*\)' "$HAPROXY_CFG" | sed -E 's/map\(([^)]*)\)/\1/')
+MAP_FILES=$(grep -oE 'map\([^)]*\)' "$HAPROXY_CFG" | sed -E "s|map\(([^)]*)\)|$HAPROXY_CFG_REMOTE/\1|")
+
 
 : > /tmp/domains_map.txt
 for f in $MAP_FILES; do
