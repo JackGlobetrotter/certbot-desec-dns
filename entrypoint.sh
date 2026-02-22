@@ -73,7 +73,7 @@ for DOMAIN in $UNIQ_DOMAINS; do
       --dns-desec-propagation-seconds "$DESEC_PROPAGATION_SECONDS" \
       --non-interactive --agree-tos \
       -d "$DOMAIN"
-    if [ "$USE_HAPROXY" = "true" ]; then
+    if  [ "$USE_HAPROXY" = "true" ] || [ "$COMBINE_CERTIFICATES" = "true" ]; then
       /app/generate_crt_list.sh
     fi
   else
