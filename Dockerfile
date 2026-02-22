@@ -15,7 +15,7 @@ COPY healthcheck.sh /app/healthcheck.sh
 RUN chmod +x /app/*.sh
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD /usr/local/bin/healthcheck.sh
+  CMD /app/healthcheck.sh
   
 # Entrypoint: checks & daemonizes
 ENTRYPOINT ["/app/entrypoint.sh"]
